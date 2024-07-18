@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html ng-app="energyChartApp">
+<head>
+    <meta charset="utf-8">
+    <title>График Энергии</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body ng-controller="MainController">
+    <div class="flex-container p-4">
+        <h4 class="mt-2">График Энергии</h4>
+        <form ng-submit="calculate()">
+            <div class="form-group">
+                <label for="birthdate">Дата рождения:</label>
+                <input type="date" id="birthdate" ng-model="birthdate" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">Рассчитать</button>
+        </form>
+
+        <canvas id="energyChart" class="mt-2"></canvas>
+        <div class="mt-2" ng-if="resultsVisible">
+            <h3>Промежуточные результаты</h3>
+            <p><strong>Дата рождения:</strong> {{ formattedBirthdate }}</p>
+            <p><strong>Код энергии:</strong> {{ energyCode }}</p>
+            <p><strong>Возраст:</strong> {{ ages }}</p>
+            <p><strong>Уровни энергии:</strong> {{ energies }}</p>
+        </div>
+       
+    </div>
+    <script>
+        angular.module('energyChartApp', [])
+        .controller('MainController', ['$scope', function($scope) {
+            // Установить дату по умолчанию на 03.10.1981
+            $scope.birthdate = new Date(1981, 9, 3); // Примечание: месяцы индексируются с 0
+            $scope.resultsVisible = false;
+
+            let chart = null;
+
+            $scope.calculate = function() {
+                const birthdate = new Date($scope.birthdate);
+
+                $scope.formattedBirthdate = `${String(birthdate.getDate()).padStart(2, '0')}.${String(birthdate.getMonth() + 1).padStart(2, '0')}.${birthdate.getFullYear()}`;
+                $scope.energyCode = calculateEnergyCode(birthdate.getDate(), birthdate.getMonth() + 1, birthdate.getFullYear());
+
+                const ages = [];
+                const energies = [];
+                for (let i = 17; i <= 90; i++) {
+                    ages.push(i);
+                    energies.push(parseInt($scope.energyCode.charAt((i - 17) % $scope.energyCode.length)));
+                }
+
+                $scope.ages = ages;
+                $scope.energies = energies;
+                $scope.resultsVisible = true;
+
+                drawChart(ages, energies);
+            };
+
+            function calculateEnergyCode(day, month, year) {
+                const codeStr = `${String(day).padStart(2, '0')}${String(month).padStart(2, '0')}`;
+                const code = parseInt(codeStr) * year;
+                return String(code);
+            }
+
+            function drawChart(ages, energies) {
+                const ctx = document.getElementById('energyChart').getContext('2d');
+
+                // Уничтожить предыдущий экземпляр графика, если он существует
+                if (chart) {
+                    chart.destroy();
+                }
+
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ages,
+                        datasets: [{
+                            label: 'Уровни энергии',
+                            data: energies,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            },
+                            y: {
+                                beginAtZero: true,
+                                max: 9
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Первоначальный расчет с датой по умолчанию
+            $scope.calculate();
+        }]);
+    </script>
+</body>
+</html>
